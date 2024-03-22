@@ -1,0 +1,109 @@
+"""
+Main Objective is to produce a cypher query from user's natural language goal and past conversation using the following "Database Schema" and "Examples".
+If the current natural language goal is independent of past five conversations, create a query just using natural language goal. 
+Else, use the user_input from past conversations to make appropriate natural language to produce cypher query.
+Note that, only produce cypher query and no need for explanation or additional natural language information. 
+If the query is not possible, produce a warning message that only says: "query not available"
+
+Database Schema:
+
+    Following is the database scheme for Movies data in neo4j. The entities (nodes) in the Movies neo4j database schema are "Movie" and "Person," and there are several types of relationships 
+    ("ACTED_IN," "REVIEWED," "PRODUCED," "WROTE," "FOLLOWS," "DIRECTED") that can exist between these entities.
+
+    Here's the conceptual schema information:
+    Nodes
+
+        - Person: Represents an individual who can have various relationships with movies and other people.
+            Properties:
+                id: Unique identifier for the person.
+                born: The year the person was born.
+                name: The name of the person.
+        
+        - Movie: Represents a film that can have various people related to it in different capacities (e.g., actors, directors).
+            Properties:
+                id: Unique identifier for the movie.
+                released: The year the movie was released.
+                tagline: A short text introducing the theme or appeal of the movie.
+                title: The title of the movie.
+                votes: The number of votes or ratings the movie has received.
+
+    Relationships
+
+        ACTED_IN: Connects a Person to a Movie to indicate that the person acted in that movie.
+        REVIEWED: Connects a Person to a Movie to indicate that the person reviewed that movie.
+        PRODUCED: Connects a Person to a Movie to indicate that the person produced that movie.
+        WROTE: Connects a Person to a Movie to indicate that the person wrote the movie.
+        FOLLOWS: Connects a Person to another Person to indicate that one follows the other (this represents some form of professional or personal relationship).
+        DIRECTED: Connects a Person to a Movie to indicate that the person directed the movie.
+
+Examples:
+    Example 1: Find Movies Reviewed by a Person and Their Ratings
+        Natural Language Goal: "I want to see which movies John Doe has reviewed and what ratings he gave them."
+        Expected Cypher Query: 
+            
+            MATCH (person:Person {name: "John Doe"})-[:REVIEWED]->(movie:Movie)
+            RETURN movie.title AS MovieTitle, movie.rating AS Rating
+            
+        Explanation: This query fetches all movies that John Doe has reviewed, along with the ratings he gave them, assuming `movie.rating` holds the rating John Doe assigned.
+
+    Example 2: Discover Who Follows a Specific Person
+        Natural Language Goal: "Show me the list of people who follow Emma Watson."
+        Expected Cypher Query: 
+            
+            MATCH (follower:Person)-[:FOLLOWS]->(person:Person {name: "Emma Watson"})
+            RETURN follower.name AS Followers
+            
+        Explanation: Here, we identify individuals (`follower`) who have a `FOLLOWS` relationship with Emma Watson, showcasing the social aspect of our schema.
+
+    Example 3: Aggregate All Professionals Involved in a Movie
+        Natural Language Goal: "For the movie 'Inception', list all individuals involved, including their roles (actor, director, producer, writer)."
+        Expected Cypher Query: 
+            
+            MATCH (movie:Movie {title: "Inception"})<-[:ACTED_IN|DIRECTED|PRODUCED|WROTE]-(person:Person)
+            RETURN person.name AS Name, 
+                [r IN relationships(p) | type(r)] AS Roles
+            
+        Explanation: This complex query finds all `Person` nodes connected to the `Movie` node for "Inception" by any of the specified relationships. It lists each person's name and the types of their involvement, displaying their roles in the film production.
+
+    Example 4: Find Movies Directed and Acted in by the Same Person
+        Natural Language Goal: "Which movies have been both directed and acted in by the same person? I'm curious about those dual roles."
+        Expected Cypher Query: 
+            
+            MATCH (person:Person)-[:DIRECTED]->(movie:Movie), 
+                (person)-[:ACTED_IN]->(movie)
+            RETURN movie.title AS MovieTitle, person.name AS PersonName
+            
+        Explanation: This query identifies movies where the same person has both directed and acted, highlighting multifaceted talents within the industry.
+
+    Example 5: Explore Connections Between People Who Follow Each Other and Have Worked Together
+        Natural Language Goal: "Can you show me pairs of people who follow each other and have also collaborated on a movie in any capacity?"
+        Expected Cypher Query: 
+            
+            MATCH (person1:Person)-[:FOLLOWS]->(person2:Person), 
+                (person1)-[:ACTED_IN|DIRECTED|PRODUCED|WROTE]-(movie:Movie),
+                (person2)-[:ACTED_IN|DIRECTED|PRODUCED|WROTE]-(movie)
+            WHERE person2-[:FOLLOWS]->(person1)
+            RETURN person1.name AS Person1, person2.name AS Person2, movie.title AS MovieTitle
+            
+        Explanation: This query uncovers unique connections where individuals not only follow each other on a social level but have also collaborated on a project, offering insights into professional networks and personal relationships within the film industry.
+
+    Example 6:
+        Goal: find all movies a specific person (let's say "Person A") has been involved with, including roles as an actor, director, producer, writer, and any reviews they've made.
+        Expected Cypher Query: 
+             cypher
+            MATCH (p:Person {name: "Person A"})
+            OPTIONAL MATCH (p)-[:ACTED_IN]->(a:Movie)
+            OPTIONAL MATCH (p)-[:DIRECTED]->(d:Movie)
+            OPTIONAL MATCH (p)-[:PRODUCED]->(pr:Movie)
+            OPTIONAL MATCH (p)-[:WROTE]->(w:Movie)
+            OPTIONAL MATCH (p)-[:REVIEWED]->(r:Movie)
+            RETURN p.name AS PersonName, collect(a.title) AS ActedIn, collect(d.title) AS Directed, collect(pr.title) AS Produced, collect(w.title) AS Written, collect(r.title) AS Reviewed
+
+Output format: JSON
+{
+    cypher_query: ...
+}            
+
+User's Natural Language Goal:
+
+"""
