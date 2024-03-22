@@ -35,9 +35,6 @@ You should now be in the `mobot` environment, indicated by the environment's nam
 
 Before running the chatbot, ensure you have updated the necessary configurations within the code:
 
-<<<<<<< Updated upstream
-- **OpenAI API Key**: Locate the placeholder for the `open_ai_key` in the code *(mobot.py)*. Replace it with your actual OpenAI API key. This key is essential for the chatbot to access OpenAI's API for processing and generating responses.
-=======
 - **OpenAI API Key Configuration**: The chatbot utilizes OpenAI's GPT models for generating responses and processing queries, requiring an OpenAI API key for access. For your convenience and security, the API key should now be specified in a configuration file rather than embedded directly in the code. Follow these steps to set it up:
 
   1. Navigate to the `config/` directory within the project folder. You will find a JSON configuration file named `open_ai_config.json`.
@@ -47,7 +44,6 @@ Before running the chatbot, ensure you have updated the necessary configurations
   3. Replace `"YOUR_API_KEY_HERE"` with your actual OpenAI API key, ensuring to keep the quotation marks. For example: `"open_ai_key": "sk-youractualapikeyhere"`.
   
   4. Save the changes to `open_ai_config.json`. The chatbot will now use this key to authenticate with OpenAI's API for all operations requiring AI processing.
->>>>>>> Stashed changes
 
 ### 2. Running the Chatbot
 
@@ -63,6 +59,6 @@ To exit the chatbot conversation, simply type `exit` at any point. The chatbot w
 
 ## Additional Information
 
-For further assistance or to report issues, please submit an issue on the project's repository.
+Refer [MoBot Documentation](docs/MoBot.md) for detailed information. For further assistance or to report issues, please submit an issue on the project's repository.
 
 ---
