@@ -1,19 +1,52 @@
+# Import system libraries
+import os
+
+# Third-party imports
 from neo4j import GraphDatabase
 from openai import OpenAI
-from gpt_helper import get_gpt_message
+
+# Local application imports
+from utils.gpt_helper import get_gpt_message
+from utils.data_processing import process_cypher_output, read_json
+
+# Gloabl variables: config files
+__location__ = os.path.realpath(os.path.join(os.getcwd()))
+__neo4j_config__ = "movies_db_config.json"
+__open_ai_config__ = "open_ai_config.json"
+__gpt_prompt_file__ = "movie_query_instruction.txt"
 
 
 class MovieChatbot:
-    def __init__(self, neo4j_uri, neo4j_username, neo4j_password, open_ai_key):
-        self.driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_username, neo4j_password))
+    def __init__(self, 
+                 config_path: str = os.path.join(__location__, 'config/'),
+                 utils_path: str = os.path.join(__location__, 'utils/')):
+        # Get config filepath
+        self.neo4j_config_json_file = str(config_path + __neo4j_config__)
+        self.open_ai_config_json_file = str(config_path + __open_ai_config__)
+        self.gpt_prompt_file = str(utils_path + __gpt_prompt_file__)
+        # Load connfig files
+        self.neo4j_config_data = read_json(self.neo4j_config_json_file)
+        self.open_ai_config_data = read_json(self.open_ai_config_json_file)
+        # Load neo4j DB parameters
+        self.neo4j_uri = self.neo4j_config_data.get("neo4j_uri", "neo4j+ssc://demo.neo4jlabs.com")
+        self.neo4j_username = self.neo4j_config_data.get("neo4j_username", "movies")
+        self.neo4j_password = self.neo4j_config_data.get("neo4j_password", "movies")
+        # Load open_ai key
+        self.open_ai_key = self.open_ai_config_data.get("open_ai_key", "")
+        if not self.open_ai_key or self.open_ai_key == "YOUR_API_KEY_HERE": 
+            print("WARNING! Please provide OpenAI API key here: config/open_ai.json and re-run MoBot! Thank you.")
+            exit(1)
+        # Initialise graph DB driver for querying neo4j
+        self.driver = GraphDatabase.driver(uri=self.neo4j_uri, 
+                                           auth=(self.neo4j_username, 
+                                                 self.neo4j_password))
+        # Initialise OpenAI client
+        self.open_ai_client = OpenAI(api_key=self.open_ai_key)
+        # Param to store user input, bot responses, and user feedback
         self.memory = []
-        self.open_ai_client = OpenAI(api_key=open_ai_key)
 
     def close(self):
         self.driver.close()
-
-    def remember(self, message):
-        self.memory.append(message)
     
     def remember(self, user_input, bot_response, user_feedback=None):
         interaction = {
@@ -30,53 +63,20 @@ class MovieChatbot:
             except Exception as e:
                 return None
             return [record for record in result]
-        
-    def process_cypher_output(self, query_results):
-        """
-        Processes a list of neo4j.Record objects, extracting and formatting
-        the data based on available keys in each Record. Handles cases where
-        the data includes lists by converting all elements to strings.
-
-        :param results: List of neo4j.Record objects.
-        :return: A string representing the extracted data, formatted for display.
-        """
-        if not query_results:
-            return "MoBot: No results found."
-        # Initialize a dictionary to hold the data extracted from each record.
-        processed_data = {}
-        for record in query_results:
-            for key in record.keys():
-                # Ensure the key exists in the dictionary and initialize if not.
-                if key not in processed_data:
-                    processed_data[key] = []
-                value = record[key]
-                # Check if the value is a list and convert elements to strings if so.
-                if isinstance(value, list):
-                    value = [str(element) for element in value]
-                # Append the possibly converted value to the list under its key.
-                processed_data[key].append(value)
-        # Format the extracted data for display.
-        formatted_responses = []
-        for key, values in processed_data.items():
-            # Convert all elements to strings, handling both flat and nested lists.
-            formatted_values = [
-                ", ".join(str(item) for item in value) if isinstance(value, list) else str(value) 
-                for value in values
-            ]
-            formatted_response = f"{key}: " + ", ".join(formatted_values)
-            formatted_responses.append(formatted_response)
-        return "\n".join(formatted_responses), processed_data
 
     def respond(self, user_input):
         # Dynamically creates Cypher queries from natural language input
-        cypher_query = get_gpt_message(client=self.open_ai_client, user_input=user_input, past_conversations=self.memory[-5:])
+        cypher_query = get_gpt_message(client=self.open_ai_client, 
+                                       prompt_file=self.gpt_prompt_file,
+                                       user_input=user_input, 
+                                       past_conversations=self.memory[-5:])
         if cypher_query == "query not available": 
             self.remember(user_input=user_input, bot_response={})
             return "MoBot: Could not produce query for your input. Try a different question, please?"
         else:
             query_results = self.query_database(query=cypher_query)
             if query_results:
-                formatted_results, processed_results = self.process_cypher_output(query_results=query_results)
+                formatted_results, processed_results = process_cypher_output(query_results=query_results)
                 self.remember(user_input=user_input, bot_response=processed_results)
                 return formatted_results
             return "MoBot: No results were found. Sorry!"
@@ -109,19 +109,3 @@ class MovieChatbot:
             print("MoBot: ", bot_response)
             self.get_feedback()
             counter += 1
-
-if __name__ == "__main__":
-    db_uri = "neo4j+ssc://demo.neo4jlabs.com"
-    db_usr = "movies"
-    db_pwd = "movies" 
-    open_ai_key = ""  # ENTER YOUR OPENAI API KEY HERE
-    chatbot = MovieChatbot(neo4j_uri=db_uri, 
-                           neo4j_username=db_usr, 
-                           neo4j_password=db_pwd, 
-                           open_ai_key=open_ai_key)
-    try:
-        chatbot.start_chat()
-    except KeyboardInterrupt:
-        print("\nGoodbye!")
-    finally:
-        chatbot.close()

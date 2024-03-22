@@ -57,12 +57,14 @@ Follow these steps to set up and start the chatbot project:
    - Activate the environment: `conda activate smc-rilla`.
 
 6. **Update Configuration with OpenAI API Key**:
-   - Locate the configuration section in the chatbot's code.
-   - Replace the placeholder with your OpenAI API key.
+   - Navigate to the `config/` directory within the project folder. You will find a JSON configuration file named `open_ai_config.json`.
+   - Open the `config.json` file in a text editor. Look for the placeholder that says `"open_ai_key": "YOUR_API_KEY_HERE"`.
+   - Replace `"YOUR_API_KEY_HERE"` with your actual OpenAI API key, ensuring to keep the quotation marks. For example: `"open_ai_key": "sk-youractualapikeyhere"`.
+   - Save the changes to `open_ai_config.json`. The chatbot will now use this key to authenticate with OpenAI's API for all operations requiring AI processing.
 
 7. **Run the Chatbot**:
    - Navigate to the project directory in your terminal.
-   - Run the chatbot script: `python chatbot.py`.
+   - Run the chatbot script: `python main.py`.
    - Interact with the chatbot through your terminal.
 
 8. **Exiting the Chatbot**:

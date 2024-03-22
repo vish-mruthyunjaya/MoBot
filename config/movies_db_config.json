@@ -1,0 +1,5 @@
+{
+    "neo4j_uri": "neo4j+ssc://demo.neo4jlabs.com",
+    "neo4j_usr": "movies",
+    "neo4j_pwd": "movies" 
+}
