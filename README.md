@@ -35,7 +35,7 @@ You should now be in the `mobot` environment, indicated by the environment's nam
 
 Before running the chatbot, ensure you have updated the necessary configurations within the code:
 
-- **OpenAI API Key**: Locate the placeholder for the `open_ai_key` in the code. Replace it with your actual OpenAI API key. This key is essential for the chatbot to access OpenAI's API for processing and generating responses.
+- **OpenAI API Key**: Locate the placeholder for the `open_ai_key` in the code *(mobot.py)*. Replace it with your actual OpenAI API key. This key is essential for the chatbot to access OpenAI's API for processing and generating responses.
 
 ### 2. Running the Chatbot
 
